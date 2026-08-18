@@ -81,4 +81,6 @@ npm run dev --prefix backend
 The React frontend will be available at `http://localhost:5173`.
 
 ## Screenshots
-*(Please embed screenshots of the UI here)*
+![Home Page](docs/home.png)
+![Learning Path Generation](docs/path.png)
+![Topic Details](docs/topic.png)
