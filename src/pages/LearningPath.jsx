@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Network } from 'lucide-react';
 import { getLearningPath } from '../api';
+import GraphViewer from '../components/GraphViewer';
 
 const LearningPath = () => {
   const { topic } = useParams();
   const [pathData, setPathData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'graph'
 
   useEffect(() => {
     getLearningPath(topic)
@@ -54,7 +56,23 @@ const LearningPath = () => {
       <h1 className="title">Your Path to {pathData.goal}</h1>
       <p className="subtitle">Follow these steps to master your goal.</p>
 
-      <div className="path-container">
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <button 
+          className={`btn ${viewMode === 'list' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setViewMode('list')}
+        >
+          List View
+        </button>
+        <button 
+          className={`btn ${viewMode === 'graph' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setViewMode('graph')}
+        >
+          Graph View
+        </button>
+      </div>
+
+      {viewMode === 'list' ? (
+        <div className="path-container">
         {nodes.map((node, index) => (
           <React.Fragment key={node.name}>
             <div className="path-node">
@@ -83,6 +101,18 @@ const LearningPath = () => {
           </React.Fragment>
         ))}
       </div>
+      ) : (
+        <div style={{ height: '600px', marginBottom: '2rem' }}>
+          {pathData.graph ? (
+            <GraphViewer 
+              graphData={pathData.graph} 
+              onNodeClick={(id) => window.location.href = `/topic/${encodeURIComponent(id)}`}
+            />
+          ) : (
+            <div className="empty-state">Graph data not available</div>
+          )}
+        </div>
+      )}
       
       <div style={{ textAlign: 'center', marginTop: '4rem' }}>
         <Link to={`/topic/${encodeURIComponent(pathData.goal)}`} className="btn btn-secondary">

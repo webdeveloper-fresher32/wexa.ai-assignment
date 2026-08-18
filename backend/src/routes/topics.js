@@ -1,44 +1,64 @@
 const express = require('express');
+const { z } = require('zod');
 const router = express.Router();
 const topicService = require('../services/topicService');
+const { sendSuccess } = require('../middleware/responseHandler');
+const { validate } = require('../middleware/validation');
 
 // GET /api/topics
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const topics = await topicService.getAllTopics();
-    res.json(topics);
+    sendSuccess(res, topics);
   } catch (error) {
-    console.error('Error fetching topics:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 
 // GET /api/topics/*name/courses
-router.get('/*name/courses', async (req, res) => {
+router.get('/*name/courses', async (req, res, next) => {
   try {
     let topicName = req.params.name;
     if (Array.isArray(topicName)) topicName = topicName[0];
     const courses = await topicService.getCoursesForTopic(topicName);
-    res.json(courses);
+    sendSuccess(res, courses);
   } catch (error) {
-    console.error('Error fetching courses:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
+  }
+});
+
+// POST /api/topics/prerequisite
+const prereqSchema = z.object({
+  source: z.string().min(1),
+  target: z.string().min(1)
+});
+
+router.post('/prerequisite', validate(prereqSchema, 'body'), async (req, res, next) => {
+  try {
+    const { source, target } = req.body;
+    const result = await topicService.addPrerequisite(source, target);
+    sendSuccess(res, result, 201);
+  } catch (error) {
+    if (error.message.includes('cycle')) {
+      error.status = 400;
+      error.code = 'CYCLIC_DEPENDENCY';
+    }
+    next(error);
   }
 });
 
 // GET /api/topics/*name
-router.get('/*name', async (req, res) => {
+router.get('/*name', async (req, res, next) => {
   try {
     let topicName = req.params.name || req.path.substring(1);
     if (Array.isArray(topicName)) topicName = topicName[0];
     const topic = await topicService.getTopicByName(topicName);
     if (!topic) {
-      return res.status(404).json({ error: 'Topic not found' });
+      throw Object.assign(new Error('Topic not found'), { status: 404, code: 'TOPIC_NOT_FOUND' });
     }
-    res.json(topic);
+    sendSuccess(res, topic);
   } catch (error) {
-    console.error('Error fetching topic:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 });
 

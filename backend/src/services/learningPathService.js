@@ -15,36 +15,85 @@ class LearningPathService {
         throw new Error(`Topic '${goalTopic}' not found.`);
       }
 
-      // Find the learning path using a multi-hop query
-      // This query finds all prerequisites required to reach the goal topic
-      // We order them by the depth of the dependency tree so we get a sequential path
+      // Fetch all paths to prerequisites
       const result = await session.run(
         `
         MATCH p = (goal:Topic {name: $goalTopic})-[:REQUIRES*0..]->(prereq:Topic)
-        WITH prereq, length(p) AS depth
-        ORDER BY depth DESC
-        RETURN prereq { .*, distance: depth } AS node
+        RETURN p
         `,
         { goalTopic }
       );
 
-      // We might get duplicates if multiple paths lead to the same prerequisite.
-      // So we filter duplicates, keeping the one with the highest depth (the one that needs to be learned first).
       const nodesMap = new Map();
-      
+      const linksMap = new Map();
+
       result.records.forEach(record => {
-        const node = record.get('node');
-        if (!nodesMap.has(node.name) || nodesMap.get(node.name).distance < node.distance) {
-          nodesMap.set(node.name, node);
+        const path = record.get('p');
+        
+        // Add all nodes in this path
+        path.segments.forEach(segment => {
+          const startNode = segment.start.properties;
+          const endNode = segment.end.properties;
+          
+          if (!nodesMap.has(startNode.name)) nodesMap.set(startNode.name, { ...startNode, requiredBy: [] });
+          if (!nodesMap.has(endNode.name)) nodesMap.set(endNode.name, { ...endNode, requiredBy: [] });
+          
+          // endNode (prerequisite) is required by startNode
+          if (!nodesMap.get(endNode.name).requiredBy.includes(startNode.name)) {
+            nodesMap.get(endNode.name).requiredBy.push(startNode.name);
+          }
+
+          // Add relationship
+          const linkId = `${startNode.name}-${endNode.name}`;
+          if (!linksMap.has(linkId)) {
+            linksMap.set(linkId, { source: startNode.name, target: endNode.name });
+          }
+        });
+        
+        // Ensure goal node is in map if path length is 0
+        if (path.segments.length === 0) {
+          const node = path.start.properties;
+          if (!nodesMap.has(node.name)) nodesMap.set(node.name, { ...node, requiredBy: [] });
         }
       });
 
-      // Convert map to array and sort by distance descending (furthest prerequisites first)
-      const pathNodes = Array.from(nodesMap.values()).sort((a, b) => Number(b.distance) - Number(a.distance));
+      // Calculate depth (distance from goal) for sequential learning path
+      const depthMap = new Map();
+      depthMap.set(goalTopic, 0);
+
+      // Simple BFS or iterative depth calculation
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const link of linksMap.values()) {
+          const sourceDepth = depthMap.get(link.source);
+          if (sourceDepth !== undefined) {
+            const currentTargetDepth = depthMap.get(link.target) || 0;
+            if (currentTargetDepth < sourceDepth + 1) {
+              depthMap.set(link.target, sourceDepth + 1);
+              changed = true;
+            }
+          }
+        }
+      }
+
+      // Format nodes for response
+      const allNodes = Array.from(nodesMap.values()).map(n => ({
+        ...n,
+        distance: depthMap.get(n.name) || 0
+      }));
+
+      // Sort by distance descending (furthest prerequisites first)
+      const pathNodes = [...allNodes].sort((a, b) => b.distance - a.distance);
+      const allLinks = Array.from(linksMap.values());
       
       return {
         goal: goalTopic,
-        path: pathNodes
+        path: pathNodes,
+        graph: {
+          nodes: allNodes,
+          links: allLinks
+        }
       };
     } finally {
       await session.close();

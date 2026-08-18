@@ -18,8 +18,8 @@ class TopicService {
         `
         MATCH (t:Topic {name: $name})
         OPTIONAL MATCH (t)-[:REQUIRES]->(prereq:Topic)
-        OPTIONAL MATCH (t)-[:LEADS_TO]->(next:Topic)
-        OPTIONAL MATCH (t)-[:TAUGHT_BY]->(course:Course)
+        OPTIONAL MATCH (next:Topic)-[:REQUIRES]->(t)
+        OPTIONAL MATCH (course:Course)-[:TEACHES]->(t)
         RETURN t, collect(DISTINCT prereq) AS prerequisites, collect(DISTINCT next) AS leadsTo, collect(DISTINCT course) AS courses
         `,
         { name }
@@ -50,10 +50,49 @@ class TopicService {
     const session = driver.session();
     try {
       const result = await session.run(
-        'MATCH (t:Topic {name: $name})-[:TAUGHT_BY]->(c:Course) RETURN c',
+        'MATCH (c:Course)-[:TEACHES]->(t:Topic {name: $name}) RETURN c',
         { name }
       );
       return result.records.map(record => record.get('c').properties);
+    } finally {
+      await session.close();
+    }
+  }
+
+  async addPrerequisite(source, target) {
+    const session = driver.session();
+    try {
+      // 1. Validate both topics exist
+      const checkTopics = await session.run(
+        'MATCH (s:Topic {name: $source}), (t:Topic {name: $target}) RETURN s, t',
+        { source, target }
+      );
+      if (checkTopics.records.length === 0) {
+        throw new Error('One or both topics do not exist.');
+      }
+
+      // 2. Cycle Detection: Check if TARGET already REQUIRES SOURCE (at any depth)
+      // If we add (source)-[:REQUIRES]->(target), and a path (target)-[:REQUIRES*]->(source) exists, it creates a cycle.
+      const cycleCheck = await session.run(
+        'MATCH p = (target:Topic {name: $target})-[:REQUIRES*]->(source:Topic {name: $source}) RETURN p',
+        { source, target }
+      );
+
+      if (cycleCheck.records.length > 0) {
+        throw new Error(`Cycle detected! Adding this prerequisite would create a cyclic dependency because ${target} already depends on ${source}.`);
+      }
+
+      // 3. Create relationship
+      await session.run(
+        `
+        MATCH (s:Topic {name: $source})
+        MATCH (t:Topic {name: $target})
+        MERGE (s)-[:REQUIRES]->(t)
+        `,
+        { source, target }
+      );
+
+      return { success: true, message: `Successfully added ${target} as a prerequisite for ${source}.` };
     } finally {
       await session.close();
     }
