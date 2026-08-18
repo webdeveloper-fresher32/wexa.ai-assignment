@@ -93,3 +93,7 @@ To demonstrate production-readiness, several defensive programming and optimizat
 
 6. **Persistent Progress State**:
    - We leveraged the Graph Database to store state. A user's device generates an anonymous `uuid` stored in `localStorage`. Checking a topic creates a physical `(User {id})-[:COMPLETED]->(Topic)` edge in Neo4j. The learning path query dynamically deduplicates the graph and merges the completion state in a single transaction.
+
+7. **Premium UI/UX Architecture**:
+   - The frontend styling architecture was overhauled to use a modern **Glassmorphism** design language. We completely avoided generic CSS frameworks in favor of a bespoke, deeply customized dark-mode aesthetic. 
+   - We incorporated subtle micro-animations, glowing state transitions, and an algorithmic "Skills you'll learn" extraction widget directly within the learning path nodes, mirroring industry-leading educational platforms like Udacity.

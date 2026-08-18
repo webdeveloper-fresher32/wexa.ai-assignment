@@ -10,6 +10,7 @@ TechPath is an application that generates dynamic learning paths for software de
 - **Defensive Programming**: Complete request validation using `Zod` and robust error handling standardization.
 - **Observability**: Request tracing via short-UUIDs injected into every backend transaction.
 - **Integration Testing**: Extensive `Jest` and `Supertest` coverage for Graph Algorithms and Validation constraints.
+- **Premium Glassmorphism UI**: A bespoke, deeply customized dark-mode aesthetic with micro-animations and "Skills you'll learn" widgets.
 
 **Live Demo**: [https://wexa-ai-assignment-drab.vercel.app](https://wexa-ai-assignment-drab.vercel.app)
 
