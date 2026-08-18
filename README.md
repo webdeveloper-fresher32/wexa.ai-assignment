@@ -2,6 +2,15 @@
 
 TechPath is an application that generates dynamic learning paths for software developers. You select a goal (e.g., "AWS", "CI/CD"), and the application calculates the complete sequence of prerequisite topics you need to learn to reach that goal.
 
+### Senior Engineering Enhancements
+- **D3.js Force Simulation**: A dynamic, physics-based interactive graph visualization of learning paths.
+- **Persistent Progress Tracking**: User progress is saved in real-time to the Neo4j Graph Database using `(User)-[:COMPLETED]->(Topic)` relationships.
+- **Graph Cycle Detection**: Multi-hop Cypher queries intercept and reject any attempts to create cyclical prerequisite loops.
+- **In-Memory Caching**: Implemented a caching middleware to intercept complex graph queries and return results instantly, drastically reducing database load.
+- **Defensive Programming**: Complete request validation using `Zod` and robust error handling standardization.
+- **Observability**: Request tracing via short-UUIDs injected into every backend transaction.
+- **Integration Testing**: Extensive `Jest` and `Supertest` coverage for Graph Algorithms and Validation constraints.
+
 **Live Demo**: [https://wexa-ai-assignment-drab.vercel.app](https://wexa-ai-assignment-drab.vercel.app)
 
 *(Please add your screen recording link here)*
