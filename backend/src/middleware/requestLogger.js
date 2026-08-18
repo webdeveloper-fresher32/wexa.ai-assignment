@@ -1,7 +1,7 @@
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const requestLogger = (req, res, next) => {
-  req.id = uuidv4().substring(0, 8); // Short ID for easier reading
+  req.id = crypto.randomUUID().substring(0, 8); // Short ID for easier reading
   const start = Date.now();
 
   // Log on request finish

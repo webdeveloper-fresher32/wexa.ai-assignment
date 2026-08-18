@@ -12,7 +12,7 @@ const validate = (schema, property = 'body') => {
       req[property] = parsed; // Replace with validated/coerced data
       next();
     } catch (err) {
-      if (err instanceof z.ZodError) {
+      if (err.name === 'ZodError' || err instanceof z.ZodError || (err && Array.isArray(err.errors))) {
         return res.status(400).json({
           success: false,
           error: {

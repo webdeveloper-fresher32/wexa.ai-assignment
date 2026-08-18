@@ -39,7 +39,7 @@ router.post('/prerequisite', validate(prereqSchema, 'body'), async (req, res, ne
     const result = await topicService.addPrerequisite(source, target);
     sendSuccess(res, result, 201);
   } catch (error) {
-    if (error.message.includes('cycle')) {
+    if (error.message.toLowerCase().includes('cycle')) {
       error.status = 400;
       error.code = 'CYCLIC_DEPENDENCY';
     }
