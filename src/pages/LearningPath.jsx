@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Network } from 'lucide-react';
 import { getLearningPath, markTopicProgress } from '../api';
 import GraphViewer from '../components/GraphViewer';
-import { v4 as uuidv4 } from 'uuid';
 
 const LearningPath = () => {
   const { topic } = useParams();
@@ -16,7 +15,7 @@ const LearningPath = () => {
   useEffect(() => {
     // Generate userId for anonymous progress tracking
     if (!localStorage.getItem('techpath_userId')) {
-      localStorage.setItem('techpath_userId', uuidv4());
+      localStorage.setItem('techpath_userId', crypto.randomUUID());
     }
 
     getLearningPath(topic)
