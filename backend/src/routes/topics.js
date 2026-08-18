@@ -4,6 +4,7 @@ const router = express.Router();
 const topicService = require('../services/topicService');
 const { sendSuccess } = require('../middleware/responseHandler');
 const { validate } = require('../middleware/validation');
+const { cache } = require('../middleware/cache');
 
 // GET /api/topics
 router.get('/', async (req, res, next) => {
@@ -50,14 +51,24 @@ router.post('/prerequisite', validate(prereqSchema, 'body'), async (req, res, ne
 // POST /api/topics/progress
 const progressSchema = z.object({
   userId: z.string().min(1),
-  topicName: z.string().min(1)
+  topicName: z.string().min(1),
+  isCompleted: z.boolean().optional().default(true)
 });
 
 router.post('/progress', validate(progressSchema, 'body'), async (req, res, next) => {
   try {
-    const { userId, topicName } = req.body;
-    await topicService.markTopicCompleted(userId, topicName);
-    sendSuccess(res, { success: true, message: `Topic ${topicName} marked as completed for ${userId}` });
+    const { userId, topicName, isCompleted } = req.body;
+    await topicService.markTopicCompleted(userId, topicName, isCompleted);
+    
+    // Invalidate cached learning paths for this user
+    const keys = cache.keys();
+    keys.forEach(key => {
+      if (key.includes(`userId=${userId}`)) {
+        cache.del(key);
+      }
+    });
+
+    sendSuccess(res, { success: true, message: `Topic ${topicName} progress updated for ${userId}` });
   } catch (error) {
     next(error);
   }

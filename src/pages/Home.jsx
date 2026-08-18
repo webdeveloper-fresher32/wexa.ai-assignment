@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ArrowRight, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { searchTopics } from '../api';
+
+const POPULAR_PATHS = [
+  'AWS Cloud Fundamentals', 
+  'Docker Fundamentals', 
+  'Kubernetes (K8s) Core', 
+  'Git & GitHub Actions', 
+  'High-Level Design (HLD)', 
+  'React Foundations'
+];
 
 const Home = () => {
   const [topics, setTopics] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     searchTopics()
       .then(data => {
-        // Sort topics alphabetically
         setTopics(data.sort((a, b) => a.name.localeCompare(b.name)));
         setLoading(false);
       })
@@ -23,93 +31,191 @@ const Home = () => {
       });
   }, []);
 
-  const handleGenerate = () => {
-    if (selectedTopic) {
-      navigate(`/path/${encodeURIComponent(selectedTopic)}`);
-    }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
+  const handleGenerate = (e) => {
+    e?.preventDefault();
     if (searchQuery) {
-      // Find exact match or close match
       const match = topics.find(t => t.name.toLowerCase() === searchQuery.toLowerCase());
       if (match) {
-        navigate(`/topic/${encodeURIComponent(match.name)}`);
+        navigate(`/path/${encodeURIComponent(match.name)}`);
       } else {
-        alert('Topic not found in graph');
+        // If not exact match but we have something similar, use the first match
+        const partialMatch = topics.find(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        if (partialMatch) {
+          navigate(`/path/${encodeURIComponent(partialMatch.name)}`);
+        } else {
+          // Just pass it as the goal, backend will handle 404
+          navigate(`/path/${encodeURIComponent(searchQuery)}`);
+        }
       }
     }
   };
 
-  if (loading) return <div className="loader"></div>;
+  const selectPopularPath = (path) => {
+    setSearchQuery(path);
+    setShowSuggestions(false);
+  };
+
+  if (loading) return <div className="loader" style={{ marginTop: '20vh' }}></div>;
 
   return (
-    <div className="animate-fade-in" style={{ textAlign: 'center', marginTop: '4rem' }}>
-      <h1 className="title">Build your learning path</h1>
-      <p className="subtitle">Choose what you want to learn. We'll show you the path.</p>
-
-      <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '3rem 2rem' }}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>What do you want to learn?</h2>
+    <div className="animate-fade-in" style={{ 
+      maxWidth: '640px', 
+      margin: '4rem auto 2rem', 
+      padding: '0 1.5rem',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start'
+    }}>
+      
+      <div style={{ marginBottom: '2.5rem', width: '100%' }}>
+        <h1 style={{ 
+          fontFamily: 'var(--font-sans)', 
+          fontSize: '1rem', 
+          fontWeight: 600, 
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: 'var(--text-secondary)',
+          marginBottom: '2rem'
+        }}>
+          TECHPATH
+        </h1>
         
-        <div className="select-wrapper">
-          <select 
-            className="topic-select" 
-            value={selectedTopic} 
-            onChange={(e) => setSelectedTopic(e.target.value)}
-          >
-            <option value="" disabled>Select a goal...</option>
-            {topics.map(topic => (
-              <option key={topic.name} value={topic.name}>
-                {topic.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="select-icon" size={24} />
-        </div>
-
-        <button 
-          className="btn" 
-          disabled={!selectedTopic} 
-          onClick={handleGenerate}
-          style={{ width: '100%', maxWidth: '400px', padding: '1rem', fontSize: '1.1rem' }}
-        >
-          Generate Learning Path <ArrowRight size={20} />
-        </button>
+        <h2 style={{ 
+          fontSize: '2.5rem', 
+          fontWeight: 400, 
+          lineHeight: 1.2, 
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.03em',
+          marginBottom: '1rem'
+        }}>
+          Build the shortest path to your next skill.
+        </h2>
       </div>
 
-      <div style={{ marginTop: '4rem', maxWidth: '400px', margin: '4rem auto 0' }}>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Or explore a specific topic:</p>
-        <form onSubmit={handleSearch} style={{ position: 'relative' }}>
+      <div style={{ width: '100%', marginBottom: '2rem' }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '1rem' }}>
+          What are you trying to learn?
+        </p>
+        
+        <form onSubmit={handleGenerate} style={{ position: 'relative', width: '100%' }}>
           <input 
             type="text" 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search topics (e.g. Docker)..." 
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSuggestions(true);
+            }}
+            placeholder="e.g. Kubernetes, React, AWS..." 
             style={{
               width: '100%',
-              padding: '1rem 3rem 1rem 1.5rem',
-              borderRadius: '9999px',
+              padding: '1.25rem 1.5rem',
+              borderRadius: '8px',
               border: '1px solid var(--border-color)',
-              background: 'var(--bg-secondary)',
+              background: 'var(--bg-base)',
               color: 'var(--text-primary)',
-              fontSize: '1rem'
+              fontSize: '1.25rem',
+              fontFamily: 'var(--font-sans)',
+              transition: 'border-color 0.2s ease',
+              outline: 'none'
             }}
+            onFocus={(e) => {
+              e.target.style.borderColor = 'var(--text-primary)';
+              if (searchQuery) setShowSuggestions(true);
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'var(--border-color)';
+              setTimeout(() => setShowSuggestions(false), 200);
+            }}
+            autoFocus
           />
           <button type="submit" style={{
             position: 'absolute',
-            right: '1rem',
+            right: '1.25rem',
             top: '50%',
             transform: 'translateY(-50%)',
             background: 'none',
             border: 'none',
             color: 'var(--text-secondary)',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            padding: '0.5rem'
           }}>
-            <Search size={20} />
+            <Search size={24} />
           </button>
+          
+          {/* Autocomplete Dropdown */}
+          {showSuggestions && searchQuery && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              marginTop: '0.5rem',
+              maxHeight: '200px',
+              overflowY: 'auto',
+              zIndex: 10,
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+            }}>
+              {topics.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
+                topics.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).map(t => (
+                  <div 
+                    key={t.name} 
+                    onClick={() => { setSearchQuery(t.name); setShowSuggestions(false); }} 
+                    style={{ padding: '0.85rem 1.5rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {t.name}
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '0.85rem 1.5rem', color: 'var(--text-muted)' }}>No topics found...</div>
+              )}
+            </div>
+          )}
         </form>
       </div>
+
+      <div style={{ width: '100%', marginBottom: '2.5rem' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Popular paths
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+          {POPULAR_PATHS.map(path => (
+            <button 
+              key={path}
+              type="button"
+              onClick={() => selectPopularPath(path)}
+              style={{
+                padding: '0.5rem 1rem',
+                background: searchQuery === path ? 'var(--text-primary)' : 'transparent',
+                color: searchQuery === path ? 'var(--bg-base)' : 'var(--text-secondary)',
+                border: `1px solid ${searchQuery === path ? 'var(--text-primary)' : 'var(--border-color)'}`,
+                borderRadius: '6px',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {path}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+        <button 
+          className="btn" 
+          disabled={!searchQuery}
+          onClick={handleGenerate}
+          style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
+        >
+          Generate learning path
+        </button>
+      </div>
+
     </div>
   );
 };

@@ -4,13 +4,14 @@ TechPath is an application that generates dynamic learning paths for software de
 
 ### Senior Engineering Enhancements
 - **D3.js Force Simulation**: A dynamic, physics-based interactive graph visualization of learning paths.
-- **Persistent Progress Tracking**: User progress is saved in real-time to the Neo4j Graph Database using `(User)-[:COMPLETED]->(Topic)` relationships.
+- **Persistent Progress Tracking**: User progress is saved in real-time to the Neo4j Graph Database using `(User)-[:COMPLETED]->(Topic)` relationships, supporting bidirectional toggling.
 - **Graph Cycle Detection**: Multi-hop Cypher queries intercept and reject any attempts to create cyclical prerequisite loops.
-- **In-Memory Caching**: Implemented a caching middleware to intercept complex graph queries and return results instantly, drastically reducing database load.
+- **Intelligent Caching**: Frequently requested learning paths can be served from memory without repeating the graph traversal, with targeted cache invalidation upon progress updates.
 - **Defensive Programming**: Complete request validation using `Zod` and robust error handling standardization.
 - **Observability**: Request tracing via short-UUIDs injected into every backend transaction.
+- **Smart Autocomplete**: Real-time topic search suggestions powered by client-side filtering.
 - **Integration Testing**: Extensive `Jest` and `Supertest` coverage for Graph Algorithms and Validation constraints.
-- **Premium Glassmorphism UI**: A bespoke, deeply customized dark-mode aesthetic with micro-animations and "Skills you'll learn" widgets.
+- **Developer-First UI**: A clean, intentional interface prioritizing information density, graph context, and clear loading/error states.
 
 **Live Demo**: [https://wexa-ai-assignment-drab.vercel.app](https://wexa-ai-assignment-drab.vercel.app)
 
@@ -43,6 +44,8 @@ graph TD
 ### Generating the Learning Path (Multi-hop Traversal)
 This is the core query of the application. It finds the goal topic, and then traverses backwards through all `REQUIRES` relationships at *any* depth (`*0..`). We order by the depth of the dependency tree so that the furthest foundational prerequisites are learned first.
 
+Neo4j supports variable-length traversal natively, making arbitrary-depth prerequisite traversal much more natural than implementing recursive relationship traversal in application code.
+
 ```cypher
 MATCH p = (goal:Topic {name: $goalTopic})-[:REQUIRES*0..]->(prereq:Topic)
 WITH prereq, length(p) AS depth
@@ -57,6 +60,20 @@ This query fetches a specific topic and finds all associated courses using the `
 MATCH (c:Course)-[:TEACHES]->(t:Topic {name: $topicName})
 RETURN c
 ```
+
+## Engineering Decisions
+
+### Why Neo4j?
+The primary operation in TechPath is not retrieving entities, but traversing relationships between them. A graph database turns multi-hop recursive prerequisite queries from a complex SQL CTE into a simple, native cypher pattern match.
+
+### Why a modular monolith?
+The application is currently small enough that introducing microservices would add operational complexity without providing a meaningful benefit. The Express backend uses strict separation of concerns (Routes -> Services) to keep business logic isolated.
+
+### Why caching?
+Learning paths are read-heavy and change relatively infrequently, so caching reduces repeated traversal of the same dependency graph for concurrent users.
+
+### Why anonymous users?
+The assignment does not require authentication. A client-generated identifier stored in `localStorage` provides persistent progress modeling in the graph without introducing an unnecessary authentication subsystem.
 
 ## Setup and Run Instructions
 
@@ -84,9 +101,7 @@ node backend/scripts/seed.js
 ### 4. Run the Application
 Run the frontend and backend concurrently:
 ```bash
-npm run dev
-# In a separate terminal:
-npm run dev --prefix backend
+npm run dev:all
 ```
 The React frontend will be available at `http://localhost:5173`.
 

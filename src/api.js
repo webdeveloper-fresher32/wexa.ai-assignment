@@ -18,10 +18,10 @@ export const getLearningPath = async (goalTopic) => {
   return response.data.data;
 };
 
-export const markTopicProgress = async (topicName) => {
+export const markTopicProgress = async (topicName, isCompleted = true) => {
   const userId = localStorage.getItem('techpath_userId');
   if (!userId) return null;
-  const response = await api.post(`/topics/progress`, { userId, topicName });
+  const response = await api.post(`/topics/progress`, { userId, topicName, isCompleted });
   return response.data.data;
 };
 export const getTopicCourses = async (topicName) => {
