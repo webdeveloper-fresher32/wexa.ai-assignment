@@ -176,7 +176,8 @@ const LearningPath = () => {
               <div className="path-connector"></div>
             )}
           </React.Fragment>
-        ))}
+          );
+        })}
       </div>
       ) : (
         <div className="animate-fade-in" style={{ width: '100%' }}>
