@@ -73,13 +73,13 @@ const LearningPath = () => {
       <p className="subtitle">Follow these steps to master your goal.</p>
 
       {pathData.progress && (
-        <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.75rem', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontWeight: 600 }}>Progress: {pathData.progress.completed} / {pathData.progress.total} Topics</span>
-            <span style={{ color: 'var(--primary)' }}>{pathData.progress.percent}%</span>
+        <div className="progress-container" style={{ marginBottom: '3rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Progress: {pathData.progress.completed} / {pathData.progress.total} Topics</span>
+            <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{pathData.progress.percent}%</span>
           </div>
-          <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${pathData.progress.percent}%`, height: '100%', backgroundColor: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${pathData.progress.percent}%` }}></div>
           </div>
         </div>
       )}
