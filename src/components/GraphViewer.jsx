@@ -121,7 +121,7 @@ export default function GraphViewer({ graphData, onNodeClick }) {
   }, [graphData, onNodeClick]);
 
   return (
-    <div className="w-full h-full overflow-hidden rounded-xl border border-slate-700 bg-slate-800/50 flex items-center justify-center min-h-[600px]">
+    <div className="graph-container">
       <svg 
         ref={svgRef} 
         width="100%" 
