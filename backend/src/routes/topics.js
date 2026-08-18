@@ -47,6 +47,22 @@ router.post('/prerequisite', validate(prereqSchema, 'body'), async (req, res, ne
   }
 });
 
+// POST /api/topics/progress
+const progressSchema = z.object({
+  userId: z.string().min(1),
+  topicName: z.string().min(1)
+});
+
+router.post('/progress', validate(progressSchema, 'body'), async (req, res, next) => {
+  try {
+    const { userId, topicName } = req.body;
+    await topicService.markTopicCompleted(userId, topicName);
+    sendSuccess(res, { success: true, message: `Topic ${topicName} marked as completed for ${userId}` });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/topics/*name
 router.get('/*name', async (req, res, next) => {
   try {

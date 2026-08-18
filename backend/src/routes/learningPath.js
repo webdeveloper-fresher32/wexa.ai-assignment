@@ -15,7 +15,8 @@ router.get('/*topic', cacheMiddleware, async (req, res, next) => {
       throw Object.assign(new Error('Goal topic is required'), { status: 400, code: 'VALIDATION_ERROR' });
     }
 
-    const pathData = await learningPathService.generatePath(topicName);
+    const userId = req.query.userId;
+    const pathData = await learningPathService.generatePath(topicName, userId);
     sendSuccess(res, pathData);
   } catch (error) {
     if (error.message.includes('not found')) {

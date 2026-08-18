@@ -97,6 +97,34 @@ class TopicService {
       await session.close();
     }
   }
+
+  async markTopicCompleted(userId, topicName) {
+    const session = driver.session();
+    try {
+      // 1. Ensure topic exists
+      const checkTopic = await session.run(
+        'MATCH (t:Topic {name: $topicName}) RETURN t',
+        { topicName }
+      );
+      if (checkTopic.records.length === 0) {
+        throw Object.assign(new Error(`Topic ${topicName} not found`), { status: 404, code: 'TOPIC_NOT_FOUND' });
+      }
+
+      // 2. Merge User and COMPLETED relationship
+      await session.run(
+        `
+        MERGE (u:User {id: $userId})
+        WITH u
+        MATCH (t:Topic {name: $topicName})
+        MERGE (u)-[:COMPLETED]->(t)
+        `,
+        { userId, topicName }
+      );
+      return true;
+    } finally {
+      await session.close();
+    }
+  }
 }
 
 module.exports = new TopicService();

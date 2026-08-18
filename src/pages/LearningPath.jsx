@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Network } from 'lucide-react';
-import { getLearningPath } from '../api';
+import { getLearningPath, markTopicProgress } from '../api';
 import GraphViewer from '../components/GraphViewer';
+import { v4 as uuidv4 } from 'uuid';
 
 const LearningPath = () => {
   const { topic } = useParams();
@@ -10,8 +11,14 @@ const LearningPath = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'graph'
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
+    // Generate userId for anonymous progress tracking
+    if (!localStorage.getItem('techpath_userId')) {
+      localStorage.setItem('techpath_userId', uuidv4());
+    }
+
     getLearningPath(topic)
       .then(data => {
         setPathData(data);
@@ -22,7 +29,17 @@ const LearningPath = () => {
         setError(err.response?.data?.error || 'Failed to load learning path');
         setLoading(false);
       });
-  }, [topic]);
+  }, [topic, refreshTrigger]);
+
+  const handleToggleComplete = async (topicName, isCompleted) => {
+    if (isCompleted) return; // For simplicity, only allow marking as complete
+    try {
+      await markTopicProgress(topicName);
+      setRefreshTrigger(prev => prev + 1); // Refresh path to update progress
+    } catch (err) {
+      console.error("Failed to mark complete", err);
+    }
+  };
 
   if (loading) return <div className="loader"></div>;
 
@@ -56,6 +73,18 @@ const LearningPath = () => {
       <h1 className="title">Your Path to {pathData.goal}</h1>
       <p className="subtitle">Follow these steps to master your goal.</p>
 
+      {pathData.progress && (
+        <div style={{ marginBottom: '2rem', padding: '1.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.75rem', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <span style={{ fontWeight: 600 }}>Progress: {pathData.progress.completed} / {pathData.progress.total} Topics</span>
+            <span style={{ color: 'var(--primary)' }}>{pathData.progress.percent}%</span>
+          </div>
+          <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ width: `${pathData.progress.percent}%`, height: '100%', backgroundColor: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
         <button 
           className={`btn ${viewMode === 'list' ? 'btn-primary' : 'btn-secondary'}`}
@@ -77,21 +106,38 @@ const LearningPath = () => {
           <React.Fragment key={node.name}>
             <div className="path-node">
               <span className="step-number">{(index + 1).toString().padStart(2, '0')}</span>
-              <Link to={`/topic/${encodeURIComponent(node.name)}`}>
-                <div className="card interactive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{node.name}</h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                      <span>{node.category}</span>
-                      <span>•</span>
-                      <span className={`badge badge-${node.difficulty?.toLowerCase() || 'beginner'}`}>
-                        {node.difficulty || 'Unknown'}
-                      </span>
+              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.5rem' }}>
+                <Link to={`/topic/${encodeURIComponent(node.name)}`}>
+                  <div className={`card interactive ${node.completed ? 'completed-card' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: node.completed ? 0.7 : 1 }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem', textDecoration: node.completed ? 'line-through' : 'none' }}>
+                        {node.name}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                        <span>{node.category}</span>
+                        <span>•</span>
+                        <span className={`badge badge-${node.difficulty?.toLowerCase() || 'beginner'}`}>
+                          {node.difficulty || 'Unknown'}
+                        </span>
+                      </div>
                     </div>
+                    <ExternalLink className="select-icon" size={20} />
                   </div>
-                  <ExternalLink className="select-icon" size={20} />
+                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingLeft: '1rem' }}>
+                  <input 
+                    type="checkbox" 
+                    id={`check-${node.name}`} 
+                    checked={node.completed || false} 
+                    onChange={() => handleToggleComplete(node.name, node.completed)}
+                    disabled={node.completed}
+                    style={{ width: '1.2rem', height: '1.2rem', cursor: node.completed ? 'default' : 'pointer' }}
+                  />
+                  <label htmlFor={`check-${node.name}`} style={{ cursor: node.completed ? 'default' : 'pointer', color: node.completed ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
+                    {node.completed ? 'Completed' : 'Mark as complete'}
+                  </label>
                 </div>
-              </Link>
+              </div>
             </div>
             
             {/* Don't render connector after the last node */}

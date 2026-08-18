@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, GitMerge, Network } from 'lucide-react';
-import { getTopicByName } from '../api';
+import { getTopicDetails, getTopicCourses } from '../api';
 
 const TopicDetails = () => {
   const { name } = useParams();
@@ -12,9 +12,12 @@ const TopicDetails = () => {
 
   useEffect(() => {
     setLoading(true);
-    getTopicByName(name)
-      .then(data => {
-        setTopic(data);
+    Promise.all([
+      getTopicDetails(name),
+      getTopicCourses(name)
+    ])
+      .then(([details, courses]) => {
+        setTopic({ ...details, courses });
         setLoading(false);
       })
       .catch(err => {

@@ -1,10 +1,9 @@
 const { driver } = require('../config/database');
 
 class LearningPathService {
-  async generatePath(goalTopic) {
+  async generatePath(goalTopic, userId = null) {
     const session = driver.session();
     try {
-      console.log('generatePath called with:', typeof goalTopic, JSON.stringify(goalTopic));
       // Find the topic first to ensure it exists
       const topicCheck = await session.run(
         'MATCH (t:Topic {name: $goalTopic}) RETURN t',
@@ -13,6 +12,16 @@ class LearningPathService {
       
       if (topicCheck.records.length === 0) {
         throw new Error(`Topic '${goalTopic}' not found.`);
+      }
+
+      // Fetch user's completed topics if userId is provided
+      let completedTopics = new Set();
+      if (userId) {
+        const completedResult = await session.run(
+          'MATCH (u:User {id: $userId})-[:COMPLETED]->(t:Topic) RETURN t.name AS name',
+          { userId }
+        );
+        completedResult.records.forEach(r => completedTopics.add(r.get('name')));
       }
 
       // Fetch all paths to prerequisites
@@ -77,19 +86,30 @@ class LearningPathService {
         }
       }
 
-      // Format nodes for response
+      // Format nodes for response and mark completion status
       const allNodes = Array.from(nodesMap.values()).map(n => ({
         ...n,
-        distance: depthMap.get(n.name) || 0
+        distance: depthMap.get(n.name) || 0,
+        completed: completedTopics.has(n.name)
       }));
 
       // Sort by distance descending (furthest prerequisites first)
       const pathNodes = [...allNodes].sort((a, b) => b.distance - a.distance);
       const allLinks = Array.from(linksMap.values());
       
+      // Calculate progress
+      const totalNodes = pathNodes.length;
+      const completedCount = pathNodes.filter(n => n.completed).length;
+      const progressPercent = totalNodes === 0 ? 0 : Math.round((completedCount / totalNodes) * 100);
+
       return {
         goal: goalTopic,
         path: pathNodes,
+        progress: {
+          total: totalNodes,
+          completed: completedCount,
+          percent: progressPercent
+        },
         graph: {
           nodes: allNodes,
           links: allLinks

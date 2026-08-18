@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ArrowRight, Search } from 'lucide-react';
-import { getTopics } from '../api';
+import { searchTopics } from '../api';
 
 const Home = () => {
   const [topics, setTopics] = useState([]);
@@ -11,7 +11,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getTopics()
+    searchTopics()
       .then(data => {
         // Sort topics alphabetically
         setTopics(data.sort((a, b) => a.name.localeCompare(b.name)));
