@@ -11,6 +11,7 @@ const LearningPath = () => {
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'graph'
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isUpdating, setIsUpdating] = useState(null);
 
   useEffect(() => {
     // Generate userId for anonymous progress tracking
@@ -32,11 +33,14 @@ const LearningPath = () => {
 
   const handleToggleComplete = async (topicName, isCompleted) => {
     if (isCompleted) return; // For simplicity, only allow marking as complete
+    setIsUpdating(topicName);
     try {
       await markTopicProgress(topicName);
       setRefreshTrigger(prev => prev + 1); // Refresh path to update progress
     } catch (err) {
       console.error("Failed to mark complete", err);
+    } finally {
+      setIsUpdating(null);
     }
   };
 
@@ -101,39 +105,67 @@ const LearningPath = () => {
 
       {viewMode === 'list' ? (
         <div className="path-container">
-        {nodes.map((node, index) => (
+        {nodes.map((node, index) => {
+          // Deterministically generate some pseudo-skills based on topic name for UI demonstration
+          const words = node.name.split(' ');
+          const pseudoSkills = [
+            `${node.name} Architecture`,
+            `Applied ${words[0]}`,
+            `${words[words.length - 1]} Patterns`
+          ];
+
+          return (
           <React.Fragment key={node.name}>
             <div className="path-node">
               <span className="step-number">{(index + 1).toString().padStart(2, '0')}</span>
               <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.5rem' }}>
-                <Link to={`/topic/${encodeURIComponent(node.name)}`}>
-                  <div className={`card interactive ${node.completed ? 'completed-card' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: node.completed ? 0.7 : 1 }}>
+                <div className={`card interactive ${node.completed ? 'completed-card' : ''}`} style={{ opacity: node.completed ? 0.7 : 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                     <div>
-                      <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem', textDecoration: node.completed ? 'line-through' : 'none' }}>
-                        {node.name}
-                      </h3>
-                      <div style={{ display: 'flex', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                        <span>{node.category}</span>
-                        <span>•</span>
-                        <span className={`badge badge-${node.difficulty?.toLowerCase() || 'beginner'}`}>
-                          {node.difficulty || 'Unknown'}
+                      <Link to={`/topic/${encodeURIComponent(node.name)}`} style={{ textDecoration: 'none' }}>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {node.name}
+                          <ExternalLink size={16} style={{ color: 'var(--text-muted)' }} />
+                        </h3>
+                      </Link>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{node.category}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>•</span>
+                        <span className={`badge badge-${node.difficulty?.toLowerCase()}`}>
+                          {node.difficulty}
                         </span>
                       </div>
                     </div>
-                    <ExternalLink className="select-icon" size={20} />
                   </div>
-                </Link>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingLeft: '1rem' }}>
-                  <input 
-                    type="checkbox" 
-                    id={`check-${node.name}`} 
-                    checked={node.completed || false} 
-                    onChange={() => handleToggleComplete(node.name, node.completed)}
-                    disabled={node.completed}
-                    style={{ width: '1.2rem', height: '1.2rem', cursor: node.completed ? 'default' : 'pointer' }}
-                  />
-                  <label htmlFor={`check-${node.name}`} style={{ cursor: node.completed ? 'default' : 'pointer', color: node.completed ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-                    {node.completed ? 'Completed' : 'Mark as complete'}
+                  
+                  {node.description && (
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                      {node.description}
+                    </p>
+                  )}
+
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Skills you'll learn</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {pseudoSkills.map(skill => (
+                        <span key={skill} style={{ padding: '0.25rem 0.75rem', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', width: 'fit-content' }} onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      checked={!!node.completed}
+                      onChange={(e) => handleToggleComplete(node.name, e.target.checked)}
+                      disabled={isUpdating === node.name}
+                    />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
+                      {node.completed ? 'Completed' : 'Mark as complete'}
+                    </span>
+                    {isUpdating === node.name && <span className="loader" style={{ width: '16px', height: '16px', margin: '0', borderWidth: '2px' }}></span>}
                   </label>
                 </div>
               </div>
@@ -147,11 +179,18 @@ const LearningPath = () => {
         ))}
       </div>
       ) : (
-        <div style={{ height: '600px', marginBottom: '2rem' }}>
+        <div className="animate-fade-in" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border-color)', justifyContent: 'center' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><strong>Legend:</strong></span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }}></div> Beginner</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }}></div> Intermediate</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div> Advanced</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}><div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#8b5cf6' }}></div> Expert</span>
+          </div>
           {pathData.graph ? (
             <GraphViewer 
               graphData={pathData.graph} 
-              onNodeClick={(id) => window.location.href = `/topic/${encodeURIComponent(id)}`}
+              onNodeClick={(id) => navigate(`/topic/${encodeURIComponent(id)}`)}
             />
           ) : (
             <div className="empty-state">Graph data not available</div>
