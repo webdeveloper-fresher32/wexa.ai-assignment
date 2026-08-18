@@ -2,6 +2,8 @@
 
 This document outlines the architectural decisions, data modeling, and engineering patterns used to build the TechPath application for the Wexa AI Take-Home Assignment.
 
+![TechPath System Design Diagram](docs/system-design-diagram.jpg)
+
 ## 1. High-Level Architecture
 
 The system is designed as a modern, decoupled web application deployed on a Serverless infrastructure. 
@@ -99,3 +101,7 @@ To demonstrate production-readiness, several defensive programming and optimizat
    - The frontend styling architecture was overhauled to use a modern, minimalist developer-tool design language (inspired by Linear and Vercel). We completely avoided generic CSS frameworks in favor of a bespoke, high-contrast dark aesthetic that prioritizes information density over flashy gradients.
    - We incorporated dependency inspectors, explicit loading/error states, and clear progress dashboards to make the application feel like a robust, professional product.
    - Added a Smart Autocomplete search index on the Home page, dynamically filtering valid topics to prevent 404s and guide users toward valid graphs immediately.
+
+8. **Curriculum Accordion (Ed-Tech Feature)**:
+   - Topic Detail pages include an expandable accordion curriculum sourced from SkillVault study materials. Each module shows difficulty, estimated duration, a short description, and 3 specific learning points.
+   - This is a pure static data layer bundled at build time — zero additional API calls or database queries. The data file is served from the edge, making it free in terms of performance.
