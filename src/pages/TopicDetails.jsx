@@ -1,7 +1,119 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, GitMerge, Network } from 'lucide-react';
+import { ArrowLeft, BookOpen, GitMerge, Network, ChevronDown, Clock, Layers } from 'lucide-react';
 import { getTopicDetails, getTopicCourses } from '../api';
+import { getSubtopics } from '../data/subtopics';
+
+const difficultyColor = {
+  Beginner: 'var(--diff-beginner)',
+  Intermediate: 'var(--diff-intermediate)',
+  Advanced: 'var(--diff-advanced)',
+  Expert: 'var(--diff-expert)'
+};
+
+const Accordion = ({ subtopic, index }) => {
+  const [open, setOpen] = useState(index === 0);
+  return (
+    <div style={{
+      border: '1px solid var(--border-color)',
+      borderRadius: '8px',
+      marginBottom: '0.75rem',
+      overflow: 'hidden',
+      transition: 'border-color 0.2s ease'
+    }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1rem 1.25rem',
+          background: open ? 'var(--bg-surface-hover)' : 'var(--bg-surface)',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+          gap: '1rem'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+          <span style={{
+            minWidth: '28px',
+            height: '28px',
+            borderRadius: '50%',
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-color)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            fontFamily: 'monospace',
+            fontWeight: 700
+          }}>
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <div>
+            <p style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem', margin: 0 }}>
+              {subtopic.title}
+            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0, marginTop: '0.15rem' }}>
+              {subtopic.description}
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+          <span style={{
+            fontSize: '0.75rem',
+            color: difficultyColor[subtopic.difficulty] || 'var(--text-muted)',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            {subtopic.difficulty}
+          </span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <Clock size={12} /> {subtopic.duration}
+          </span>
+          <ChevronDown
+            size={16}
+            style={{
+              color: 'var(--text-muted)',
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease'
+            }}
+          />
+        </div>
+      </button>
+
+      {open && (
+        <div style={{
+          padding: '1rem 1.25rem 1.25rem',
+          background: 'var(--bg-base)',
+          borderTop: '1px solid var(--border-color)',
+          animation: 'fadeInUp 0.2s ease'
+        }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {subtopic.points.map((point, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <span style={{
+                  display: 'inline-block',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: 'var(--text-muted)',
+                  marginTop: '0.45rem',
+                  flexShrink: 0
+                }} />
+                {point}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TopicDetails = () => {
   const { name } = useParams();
@@ -9,6 +121,8 @@ const TopicDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  const curriculum = getSubtopics(decodeURIComponent(name));
 
   useEffect(() => {
     setLoading(true);
@@ -48,6 +162,7 @@ const TopicDetails = () => {
         <ArrowLeft size={16} /> Back
       </button>
 
+      {/* Header Card */}
       <div className="card" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
@@ -68,11 +183,39 @@ const TopicDetails = () => {
         <div style={{ marginTop: '2rem' }}>
           <h2 className="section-title">About</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: '1.6' }}>
-            {topic.description}
+            {curriculum ? curriculum.overview : topic.description}
           </p>
         </div>
+
+        {curriculum && (
+          <div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <Layers size={14} />
+              <span>{curriculum.subtopics.length} modules</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <Clock size={14} />
+              <span>{curriculum.estimatedTime}</span>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Curriculum Accordion */}
+      {curriculum && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            <BookOpen size={20} /> Curriculum
+          </h2>
+          <div>
+            {curriculum.subtopics.map((subtopic, i) => (
+              <Accordion key={subtopic.title} subtopic={subtopic} index={i} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Graph Relations + Courses Grid */}
       <div className="details-grid">
         <div className="graph-relations">
           <div className="card" style={{ marginBottom: '2rem' }}>

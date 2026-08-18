@@ -3,3 +3,11 @@ node_modules/
 .env.*
 !.env.example
 .DS_Store
+
+# Build output (Vercel builds from source automatically)
+dist/
+build/
+
+# Editor/OS artifacts
+*.log
+.vscode/settings.json
