@@ -106,6 +106,12 @@ npm run dev:all
 The React frontend will be available at `http://localhost:5173`.
 
 ## Screenshots
-![Home Page](docs/home.png)
-![Learning Path Generation](docs/path.png)
-![Topic Details](docs/topic.png)
+
+### Interactive Force Simulation Graph
+![Interactive Force Simulation Graph](docs/graph-view.png)
+
+### Topic List View
+![Topic List View](docs/topic-list.png)
+
+### Full Application Layout
+![Full Application Layout](docs/graph-browser.png)
