@@ -33,13 +33,21 @@ A graph database genuinely earns its place here because relationship traversal i
 graph TD
     Topic((Topic))
     Course((Course))
+    User((User))
     
     Topic -- REQUIRES --> Topic
     Course -- TEACHES --> Topic
+    User -- COMPLETED --> Topic
 ```
 
-- **Topic**: Represents a subject to learn (e.g., "JavaScript", "AWS"). Has properties: `name`, `category`, `difficulty`, `description`.
-- **Course**: Represents a learning resource. Has properties: `title`, `provider`, `url`.
+- **Topic**: Represents a subject to learn (e.g., `JavaScript`, `AWS`). Properties: `name`, `category`, `difficulty`, `description`.
+- **Course**: Represents a learning resource. Properties: `title`, `provider`, `duration`.
+- **User**: Represents an anonymous learner identified by a client-generated UUID stored in `localStorage`. Properties: `id`.
+
+Relationships:
+- `(:Topic)-[:REQUIRES]->(:Topic)` — prerequisite dependency between topics (traversed multi-hop to generate a full learning path).
+- `(:Course)-[:TEACHES]->(:Topic)` — maps a learning resource to the topic it covers.
+- `(:User)-[:COMPLETED]->(:Topic)` — records a user's real-time progress, persisted in the graph and toggled bidirectionally.
 
 ## Main Queries
 
