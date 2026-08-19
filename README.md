@@ -15,7 +15,9 @@ TechPath is an application that generates dynamic learning paths for software de
 
 **Live Demo**: [https://wexa-ai-assignment-drab.vercel.app](https://wexa-ai-assignment-drab.vercel.app)
 
-*(Please add your screen recording link here)*
+## System Design
+
+![TechPath System Design](docs/system-design-diagram.jpg)
 
 ## Why a graph database?
 
@@ -107,11 +109,14 @@ The React frontend will be available at `http://localhost:5173`.
 
 ## Screenshots
 
-### Interactive Force Simulation Graph
-![Interactive Force Simulation Graph](docs/graph-view.png)
+### Home — Smart Autocomplete Search
+![Home Page](docs/screenshot-home.png)
 
-### Topic List View
-![Topic List View](docs/topic-list.png)
+### Learning Mode — Step-by-step Path with Progress Tracking
+![Learning Mode](docs/screenshot-learning-mode.png)
 
-### Full Application Layout
-![Full Application Layout](docs/graph-browser.png)
+### Dependency Graph — D3.js Force Simulation
+![Dependency Graph](docs/screenshot-dependency-graph.png)
+
+### Topic Detail — Curriculum Accordion
+![Topic Detail](docs/screenshot-topic-detail.png)
