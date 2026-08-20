@@ -15,6 +15,8 @@ TechPath is an application that generates dynamic learning paths for software de
 
 **Live Demo**: [https://wexa-ai-assignment-drab.vercel.app](https://wexa-ai-assignment-drab.vercel.app)
 
+**Screen Recording**: [Watch App Walkthrough](https://drive.google.com/file/d/1DT7WBHte4yF4yoFY9w22C6S_6eJGx1rp/view?usp=sharing)
+
 ## System Design
 
 ![TechPath System Design](docs/system-design-diagram.jpg)
